@@ -19,11 +19,13 @@
 
 #include "nds/ndstypes.h"
 
-// #include "knee.h"
+#include "knee.h"
 
 using namespace std;
 
 volatile int frame = 0;
+int switch_val = 0;
+int interp_type = 0;
 
 void Vblank() {
 //---------------------------------------------------------------------------------
@@ -74,7 +76,7 @@ void drawInterpolation4pq(vector<touchPosition> const &touchPositions) {
 }
 */
 
-void drawInterpolationLagrange(vector<touchPosition> const &touchPositions, float lambda) {
+void drawInterpolationQuadraticLagrange(vector<touchPosition> const &touchPositions, float lambda) {
   int k = touchPositions.size()-1;
   if (touchPositions.size() % 2 == 0)
   {
@@ -114,34 +116,52 @@ void drawInterpolationLagrange(vector<touchPosition> const &touchPositions, floa
   }
 }
 
+void drawInterpolation(vector<touchPosition> const &touchPositions, float lambda) {
+  // if (interp_type == 0)
+    drawInterpolationQuadraticLagrange(touchPositions, lambda);
+  // if (inter_type == 1)
+   // drawInterpolationCubicLagrange(touchPositions, lambda);
+}
+
+void drawBg() {
+  if (switch_val == 0) {
+    vramDefault();
+    videoSetMode(MODE_FB0);
+    vramSetBankA(VRAM_A_LCD);
+    consoleDemoInit();
+  }
+  if (switch_val == 1) {
+    decompress(kneeBitmap, VRAM_A,  LZ77Vram);
+  }
+}
+
 void clearFullScreen(vector<touchPosition> &touchPositions) {
-  vramDefault();
-  
-  videoSetMode(MODE_FB0);
-  vramSetBankA(VRAM_A_LCD);
-  
-  lcdMainOnBottom();
-  
-	consoleDemoInit();
-	
+  drawBg();
   touchPositions.clear();
 }
 
 void clearScreenKeepingPoints(vector<touchPosition> const &touchPositions) {
-  vramDefault();
-  
-  videoSetMode(MODE_FB0);
-  vramSetBankA(VRAM_A_LCD);
-  
-  lcdMainOnBottom();
-  
-	consoleDemoInit();
+  drawBg();
   for(vector<touchPosition>::const_iterator it = touchPositions.begin(); it != touchPositions.end(); ++it) {
     setPixel(it->px, it->py, 255);
   }
 }
 
+
+
 int main(void) {
+  
+  // powerOn(POWER_ALL_2D);
+  
+  // videoSetMode(MODE_5_2D);
+  // vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
+  
+  // int bg3 = bgInit(3, BgType_Bmp8, BgSize_B8_256x256, 0,0);
+
+  // dmaCopy(kneeBitmap, bgGetGfxPtr(bg3), 256*256);
+  // dmaCopy(kneePal, BG_PALETTE, 256*2);
+  
+  bool drawed = false;
   
   touchPosition touchXY;
   touchPosition touchOld;
@@ -158,9 +178,14 @@ int main(void) {
   
   irqSet(IRQ_VBLANK, Vblank);
 
-  consoleDemoInit();
 	
 	touchRead(&touchOld);
+	
+  //  section background
+	bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0,0);
+  // decompress(kneeBitmap, VRAM_A,  LZ77Vram);
+	
+  consoleDemoInit();
 	
   // iprintf("\x1b[10;0H(debug) Frame = %d",frame);
   printf("\x1b[16;0HLambda = %0.2f",lambda);
@@ -198,7 +223,8 @@ int main(void) {
        
        scanKeys();
        if (keysHeld() & KEY_A) {
-         drawInterpolationLagrange(touchArray, lambda);
+         drawInterpolation(touchArray, lambda);
+         drawed = true;
        }
        if (keysHeld() & KEY_UP) {
          lambda = lambda + 0.01;
@@ -214,13 +240,33 @@ int main(void) {
        }
        if (keysHeld() & KEY_X) {
          clearFullScreen(touchArray);
+         drawed = false;
        }
        if (keysHeld() & KEY_Y) {
-         clearScreenKeepingPoints(touchArray);
+        clearScreenKeepingPoints(touchArray);
+        drawed = false;
        }
        if (keysHeld() & KEY_LEFT) {
-         touchArray.pop_back();
-         clearScreenKeepingPoints(touchArray);
+         // touchArray.pop_back();
+         // clearScreenKeepingPoints(touchArray);
+         switch_val = switch_val - 1;
+         if (switch_val < 0) {
+           switch_val = 0;
+           } else {
+             clearScreenKeepingPoints(touchArray);
+             if (drawed)
+               drawInterpolation(touchArray, lambda);
+           }
+       }
+       if (keysHeld() & KEY_RIGHT) {
+         switch_val = switch_val + 1;
+         if (switch_val > 1) {
+           switch_val = 1;
+         } else {
+           clearScreenKeepingPoints(touchArray);
+           if (drawed)
+             drawInterpolation(touchArray, lambda);
+         }
        }
        
        // if (touchArray.size() == 3 && !drawed) {
