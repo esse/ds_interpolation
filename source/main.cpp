@@ -187,13 +187,14 @@ int main(void) {
 		swiWaitForVBlank();
 		touchRead(&touchXY);
 
-    if(touchXY.px != 0 || touchXY.py != 0) {
-      if(abs(touchXY.px - touchOld.px) > 3 && abs(touchXY.py - touchOld.py) > 3) {
+    if((touchXY.px != 0 || touchXY.py != 0) && counter == 0) {
+      // if(abs(touchXY.px - touchOld.px) > 3 && abs(touchXY.py - touchOld.py) > 3) {
         touchArray.push_back(touchXY);
         touchOld.px = touchXY.px;
         touchOld.py = touchXY.py;
         setPixel(touchXY.px,touchXY.py,255);
-      }
+        counter = 10;
+      // }
     }
     
     printf("\x1b[16;0HLambda = %0.2f",lambda);
@@ -201,8 +202,11 @@ int main(void) {
        
     scanKeys();
     if (keysHeld() & KEY_A) {
-      drawInterpolation(touchArray, lambda);
-      drawed = true;
+      if (counter == 0) {
+        drawInterpolation(touchArray, lambda);
+        drawed = true;
+        counter = 10;
+      }
     }
     if (keysHeld() & KEY_UP) {
       lambda = lambda + 0.01;
@@ -215,12 +219,18 @@ int main(void) {
         lambda = 0;
     }
     if (keysHeld() & KEY_X) {
-      clearFullScreen(touchArray);
-      drawed = false;
+      if (counter == 0) {
+        clearFullScreen(touchArray);
+        drawed = false;
+        counter = 10;
+      }
     }
     if (keysHeld() & KEY_Y) {
-     clearScreenKeepingPoints(touchArray);
-     drawed = false;
+      if (counter == 0) {
+        clearScreenKeepingPoints(touchArray);
+        drawed = false;
+        counter = 10;
+      }
     }
     if (keysHeld() & KEY_LEFT) {
       switch_val = switch_val - 1;
@@ -261,7 +271,7 @@ int main(void) {
         touchArray.pop_back();
         clearScreenKeepingPoints(touchArray);
         drawed = false;
-        counter = 5;
+        counter = 10;
       }
     }  
   }  
