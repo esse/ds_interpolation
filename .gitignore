@@ -1,0 +1,5 @@
+.DS_Store
+.kdev4/
+build/
+interpolation.elf
+interpolation.nds
