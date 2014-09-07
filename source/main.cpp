@@ -153,6 +153,7 @@ void clearScreenKeepingPoints(vector<touchPosition> const &touchPositions) {
   }
 }
 
+int counter = 0;
 
 int main(void) {
   
@@ -179,6 +180,9 @@ int main(void) {
 
 	
   while(1) {
+    
+    if (counter > 0)
+      counter = counter - 1;
 	
 		swiWaitForVBlank();
 		touchRead(&touchXY);
@@ -252,6 +256,14 @@ int main(void) {
         printInterp();
       } 
     }
+    if (keysHeld() & KEY_B) {
+      if (touchArray.size() > 0 && counter == 0) {
+        touchArray.pop_back();
+        clearScreenKeepingPoints(touchArray);
+        drawed = false;
+        counter = 5;
+      }
+    }  
   }  
   return 0;
 }
